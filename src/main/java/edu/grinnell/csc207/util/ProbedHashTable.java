@@ -186,12 +186,16 @@ public class ProbedHashTable<K, V> implements HashTable<K, V> {
     int index = find(key);
     @SuppressWarnings("unchecked")
     Pair<K, V> pair = (Pair<K, V>) pairs[index];
+    
     if (pair == null) {
       if (REPORT_BASIC_CALLS && (reporter != null)) {
         reporter.report("get(" + key + ") failed");
       } // if reporter != null
       throw new IndexOutOfBoundsException("Invalid key: " + key);
     } else {
+      if (!(pair.key().equals(key))){
+        throw new IndexOutOfBoundsException("returned an index that does not match the key");
+      }
       if (REPORT_BASIC_CALLS && (reporter != null)) {
         reporter.report("get(" + key + ") => " + pair.value());
       } // if reporter != null
@@ -310,7 +314,7 @@ public class ProbedHashTable<K, V> implements HashTable<K, V> {
    */
   @Override
   public void clear() {
-    this.pairs = new Object[41];
+    this.pairs = new Object[5];
     this.size = 0;
   } // clear()
 
@@ -367,9 +371,17 @@ public class ProbedHashTable<K, V> implements HashTable<K, V> {
     } // if reporter != null
     // Create a new table of that size.
     Object[] newPairs = new Object[newSize];
+    Object[] oldPairs = this.pairs.clone();
+    this.pairs = newPairs;
     // Move all pairs from the old table to their appropriate
     // location in the new table.
-    // STUB
+    Pair <K, V> currentPair;
+    
+    for (int i = 0; i < oldPairs.length; i++) {
+      currentPair=  (Pair <K, V>) oldPairs[i];
+      set(currentPair.key(), currentPair.value());
+      
+    } // for
     // And update our pairs
   } // expand()
 
@@ -383,7 +395,13 @@ public class ProbedHashTable<K, V> implements HashTable<K, V> {
    * @return the aforementioned index.
    */
   int find(K key) {
-    return Math.abs(key.hashCode()) % this.pairs.length;
+    int index = Math.abs(key.hashCode()) % this.pairs.length;
+    Pair<K, V> pair = (Pair<K, V>) pairs[index];
+    while ((!(pair == null)) && (!pair.key().equals(key))){
+      index = (index + (int) this.PROBE_OFFSET) % pairs.length;
+      pair = ((Pair<K,V>) pairs[index]);
+    }
+    return index;
   } // find(K)
 
 } // class ProbedHashTable<K, V>
